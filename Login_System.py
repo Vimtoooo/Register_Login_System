@@ -1,3 +1,5 @@
+from Exceptions import LengthOfPasswordTooShort, LengthOfPasswordTooLong, InvalidUsernameError, InvalidPasswordError, UserAlreadyExistsError
+
 class LoginSystem:
     
     __mapping: dict[str, str] = {
@@ -17,33 +19,28 @@ class LoginSystem:
     
     def register(self, username: str, password: str) -> bool:
 
-        try:
-            if not 8 <= len(password) <= 64:
-                raise ValueError("Password must be between 8 characters at minimum or 64 at maximum")
-
-            if username not in self.__users:
-                encrypted_password: str = self.__encrypt(password)
-
-                if encrypted_password == "INVALID_CHARACTER":
-                    raise ValueError("Invalid usage of characters")
-
-                self.__users.update({username : encrypted_password})
-                print("User registered successfully")
-                return True
-
-            else:
-                print("User already exists")
-                return False
+        if len(password) < 8:
+            raise LengthOfPasswordTooShort("The length of the password must be at a minimum of 8 or more characters!")
         
-        except ValueError as e:
-            print(f"Error: {e}")
+        if len(password) > 64:
+            raise LengthOfPasswordTooLong("The length of the password must be at a maximum of 64 or less characters!")
+
+        if username not in self.__users:
+            encrypted_password: str = self.__encrypt(password)
+
+            if encrypted_password == "INVALID_CHARACTER":
+                raise ValueError("Invalid usage of characters")
+
+            self.__users.update({username : encrypted_password})
+            print("User registered successfully")
+            return True
+
+        else:
+            print("User already exists")
             return False
-        
-        except Exception:
-            print("Error: An unknown error occurred")
-            return False
-    
+
     def login(self, username: str, password: str):
+        
         if username in self.__users:
             encrypted_password: str = self.__encrypt(password)
             if encrypted_password == self.__users[username]:
@@ -57,6 +54,7 @@ class LoginSystem:
             print("User isn't in the system")
     
     def sign_out(self, username: str):
+        
         if username in self.__users:
             if username in self.__logged_users:
                 self.__logged_users.discard(username)
@@ -70,6 +68,7 @@ class LoginSystem:
     
     def __encrypt(self, password: str) -> str:
         encrypted_password: str = ""
+        
         for c in password:
             encrypted_char: str | None = self.__mapping.get(c)
 
