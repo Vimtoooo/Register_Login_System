@@ -19,17 +19,12 @@ class LoginSystem:
     
     def register(self, username: str, password: str) -> bool:
 
-        if not isinstance(username, str):
-            raise InvalidDataTypeError(f"Incorrect data type for the username argument -> {type(username)}")
-
-        if not isinstance(password, str):
-            raise InvalidDataTypeError(f"Incorrect data type for the password argument -> {type(password)}")
-
+        self.__validate_username(username)
+        self.__validate_password(password)
+        
         if username in self.__users:
             raise UsernameAlreadyExistsError("Username has already been taken")
         
-        self.__validate_username(username)
-        self.__validate_password(password)
         encrypted_password: str = self.__encrypt(password)
 
         self.__users.update({username : encrypted_password})
@@ -39,11 +34,8 @@ class LoginSystem:
 
     def login(self, username: str, password: str) -> bool:
         
-        if not isinstance(username, str):
-            raise InvalidDataTypeError(f"Incorrect data type for the username argument -> {type(username)}")
-
-        if not isinstance(password, str):
-            raise InvalidDataTypeError(f"Incorrect data type for the password argument -> {type(password)}")
+        self.__validate_username(username)
+        self.__validate_password(password)
 
         if username not in self.__users:
             raise UsernameNotFoundError("This username either does not exist or is incorrect")
@@ -54,7 +46,7 @@ class LoginSystem:
         encrypted_password: str = self.__encrypt(password)
         
         if encrypted_password != self.__users[username]:
-            raise InvalidPasswordError("Incorrect or invalid password")
+            raise InvalidPasswordError("The password is incorrect")
 
         self.__logged_users.add(username)
         print("User logged in successfully")
@@ -63,8 +55,7 @@ class LoginSystem:
                 
     def sign_out(self, username: str) -> bool:
         
-        if not isinstance(username, str):
-            raise InvalidDataTypeError(f"Incorrect data type for the username argument -> {type(username)}")
+        self.__validate_username(username)
 
         if username not in self.__users:
             raise UsernameNotFoundError("This username either does not exist or is incorrect")
@@ -79,11 +70,7 @@ class LoginSystem:
     
     def alter_username(self, current_username: str, new_username: str) -> bool:
         
-        if not isinstance(current_username, str):
-            raise InvalidDataTypeError(f"Incorrect data type for the current_username argument -> {type(current_username)}")
-        
-        if not isinstance(new_username, str):
-            raise InvalidDataTypeError(f"Incorrect data type for the new_username argument -> {type(new_username)}")
+        self.__validate_username(current_username, new_username)
         
         if current_username not in self.__users:
             raise UsernameNotFoundError("This username either does not exist or is incorrect")
@@ -99,7 +86,87 @@ class LoginSystem:
     def alter_password(self, username: str, current_password: str, new_password: str) -> bool:
         pass
 
-    def __validate_password(self, password: str) -> bool:
+    def __validate_username(self, username: str, new_username: str = "") -> bool:
+        
+        if not isinstance(username, str):
+            raise InvalidDataTypeError(f"Incorrect data type for the username argument -> {type(username)}")
+        
+        if not isinstance(new_username, str):
+            raise InvalidDataTypeError(f"Incorrect data type for the new_username argument -> {type(new_username)}")
+        
+        length_username: int = len(username)
+        
+        if length_username < 4:
+            raise LengthOfUsernameTooShort("The length of the username must be at a minimum of 4 characters!")
+
+        if length_username > 50:
+            raise LengthOfUsernameTooLong("The length of the username must be at a maximum of 50 or less characters!")
+        
+        if not new_username:
+            for c in username:
+                if c not in self.__mapping:
+                    raise InvalidUsernameError(f"Invalid usage of characters for the username: {c}")
+                
+            return True
+        
+        length_new_username = len(new_username)
+        
+        if length_username >= length_new_username:
+            username_limit_reached: bool = False
+
+            for i in range(length_username):
+                
+                if i >= length_username:
+                    new_username_limit_reached = True
+
+                if username_limit_reached:
+                    c2: str = username[i]
+
+                    if c2 not in self.__mapping:
+                        raise InvalidUsernameError(f"Invalid usage of characters for the username: {c2}")
+                
+                else:
+                    c1, c2 = username[i], new_username[i]
+
+                    if c1 not in self.__mapping:
+                        raise InvalidUsernameError(f"Invalid usage of characters for the username: {c1}")
+                    
+                    if c2 not in self.__mapping:
+                        raise InvalidUsernameError(f"Invalid usage of characters for the new_username: {c2}")
+        
+            return True
+        
+        new_username_limit_reached: bool = False
+
+        for i in range(length_new_username):
+                
+            if i >= length_username:
+                new_username_limit_reached = True
+
+            if new_username_limit_reached:
+                c1: str = username[i]
+
+                if c1 not in self.__mapping:
+                    raise InvalidUsernameError(f"Invalid usage of characters for the username: {c1}")
+                
+            c1, c2 = username[i], new_username[i]
+
+            if c1 not in self.__mapping:
+                raise InvalidUsernameError(f"Invalid usage of characters for the username: {c1}")
+                
+            if c2 not in self.__mapping:
+                raise InvalidUsernameError(f"Invalid usage of characters for the new_username: {c2}")
+            
+        return True
+
+    def __validate_password(self, password: str, new_password: str = "") -> bool:
+        
+        if not isinstance(password, str):
+            raise InvalidDataTypeError(f"Incorrect data type for the password argument -> {type(password)}")
+        
+        if not isinstance(new_password, str):
+            raise InvalidDataTypeError(f"Incorrect data type for the new_password argument -> {type(new_password)}")
+
         password_length: int = len(password)
         
         if password_length < 8:
@@ -112,21 +179,6 @@ class LoginSystem:
             if c not in self.__mapping:
                 raise InvalidPasswordError("Invalid usage of characters for the password")
 
-        return True
-
-    def __validate_username(self, username: str) -> bool:
-        username_length: int = len(username)
-        
-        if username_length < 4:
-            raise LengthOfUsernameTooShort("The length of the username must be at a minimum of 4 characters!")
-
-        if username_length > 50:
-            raise LengthOfUsernameTooLong("The length of the username must be at a maximum of 50 or less characters!")
-        
-        for c in username:
-            if c not in self.__mapping:
-                raise InvalidUsernameError("Invalid usage of characters for the username")
-        
         return True
     
     def __encrypt(self, password: str) -> str:
