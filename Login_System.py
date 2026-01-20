@@ -1,4 +1,4 @@
-from Exceptions import LengthOfPasswordTooShort, LengthOfPasswordTooLong, InvalidUsernameError, InvalidPasswordError, UsernameAlreadyExistsError, UsernameNotFoundError, UserAlreadyLoggedInError, UserAlreadySignedOutError, InvalidDataTypeError, LengthOfUsernameTooShort, LengthOfUsernameTooLong
+from Exceptions import LengthOfPasswordTooShort, LengthOfPasswordTooLong, InvalidUsernameError, InvalidPasswordError, UsernameAlreadyExistsError, UsernameNotFoundError, UserAlreadyLoggedInError, UserAlreadySignedOutError, UserNotLoggedInError, UserNotSignedOutError, InvalidDataTypeError, LengthOfUsernameTooShort, LengthOfUsernameTooLong
 
 class LoginSystem:
     
@@ -25,27 +25,17 @@ class LoginSystem:
         if not isinstance(password, str):
             raise InvalidDataTypeError(f"Incorrect data type for the password argument -> {type(password)}")
 
-        if len(password) < 8:
-            raise LengthOfPasswordTooShort("The length of the password must be at a minimum of 8 or more characters!")
-        
-        if len(password) > 64:
-            raise LengthOfPasswordTooLong("The length of the password must be at a maximum of 64 or less characters!")
-    
-        if len(username) < 4:
-            raise LengthOfUsernameTooShort("The length of the username must be at a minimum of 4 characters!")
-        
-        if len(username) > 50:
-            raise LengthOfUsernameTooLong("The length of the username must be at a maximum of 50 or less characters!")
-
-        if username not in self.__users and self.__validate_username(username):
-            encrypted_password: str = self.__encrypt(password)
-
-            self.__users.update({username : encrypted_password})
-            print("User registered successfully")
-            return True
-
-        else:
+        if username in self.__users:
             raise UsernameAlreadyExistsError("Username has already been taken")
+        
+        self.__validate_username(username)
+        self.__validate_password(password)
+        encrypted_password: str = self.__encrypt(password)
+
+        self.__users.update({username : encrypted_password})
+        print("User registered successfully")
+        return True
+            
 
     def login(self, username: str, password: str) -> bool:
         
@@ -55,41 +45,83 @@ class LoginSystem:
         if not isinstance(password, str):
             raise InvalidDataTypeError(f"Incorrect data type for the password argument -> {type(password)}")
 
-        if username in self.__users:
-            encrypted_password: str = self.__encrypt(password)
-            
-            if encrypted_password == self.__users[username]:
-                
-                if username in self.__logged_users:
-                    raise UserAlreadyLoggedInError("This user is already logged in")
-
-                self.__logged_users.add(username)
-                print("User logged in successfully")
-                return True
-            
-            else:
-                raise InvalidPasswordError("Incorrect or invalid password")
-        
-        else:
+        if username not in self.__users:
             raise UsernameNotFoundError("This username either does not exist or is incorrect")
-    
+        
+        if username in self.__logged_users:
+            raise UserAlreadyLoggedInError("This user is already logged in")
+            
+        encrypted_password: str = self.__encrypt(password)
+        
+        if encrypted_password != self.__users[username]:
+            raise InvalidPasswordError("Incorrect or invalid password")
+
+        self.__logged_users.add(username)
+        print("User logged in successfully")
+        return True
+            
+                
     def sign_out(self, username: str) -> bool:
         
         if not isinstance(username, str):
             raise InvalidDataTypeError(f"Incorrect data type for the username argument -> {type(username)}")
 
-        if username in self.__users:
-            if username not in self.__logged_users:
-                raise UserAlreadySignedOutError("This user is already signed out")
-
-            self.__logged_users.discard(username)
-            print("User signed out successfully")
-            return True
-            
-        else:
+        if username not in self.__users:
             raise UsernameNotFoundError("This username either does not exist or is incorrect")
         
+        if username not in self.__logged_users:
+            raise UserAlreadySignedOutError("This user is already signed out")
+        
+        self.__logged_users.discard(username)
+        print("User signed out successfully")
+        return True
+            
+    
+    def alter_username(self, current_username: str, new_username: str) -> bool:
+        
+        if not isinstance(current_username, str):
+            raise InvalidDataTypeError(f"Incorrect data type for the current_username argument -> {type(current_username)}")
+        
+        if not isinstance(new_username, str):
+            raise InvalidDataTypeError(f"Incorrect data type for the new_username argument -> {type(new_username)}")
+        
+        if current_username not in self.__users:
+            raise UsernameNotFoundError("This username either does not exist or is incorrect")
+        
+        if current_username not in self.__logged_users:
+            raise UserNotLoggedInError("It is required to log in before altering your username")
+        
+        self.__validate_username(new_username)
+        encrypted_password: str = self.__users.pop(current_username)
+        self.__users.update({new_username : encrypted_password})
+        return True
+
+    def alter_password(self, username: str, current_password: str, new_password: str) -> bool:
+        pass
+
+    def __validate_password(self, password: str) -> bool:
+        password_length: int = len(password)
+        
+        if password_length < 8:
+            raise LengthOfPasswordTooShort("The length of the password must be at a minimum of 8 or more characters!")
+
+        if password_length > 64:
+            raise LengthOfPasswordTooLong("The length of the password must be at a maximum of 64 or less characters!")
+        
+        for c in password:
+            if c not in self.__mapping:
+                raise InvalidPasswordError("Invalid usage of characters for the password")
+
+        return True
+
     def __validate_username(self, username: str) -> bool:
+        username_length: int = len(username)
+        
+        if username_length < 4:
+            raise LengthOfUsernameTooShort("The length of the username must be at a minimum of 4 characters!")
+
+        if username_length > 50:
+            raise LengthOfUsernameTooLong("The length of the username must be at a maximum of 50 or less characters!")
         
         for c in username:
             if c not in self.__mapping:

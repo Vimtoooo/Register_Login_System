@@ -38,6 +38,14 @@ class UserAlreadySignedOutError(Exception):
     def __init__(self, error: str):
         super().__init__(error)
 
+class UserNotLoggedInError(Exception):
+    def __init__(self, error: str):
+        super().__init__(error)
+
+class UserNotSignedOutError(Exception):
+    def __init__(self, error: str):
+        super().__init__(error)
+
 class InvalidDataTypeError(Exception):
     def __init__(self, error: str):
         super().__init__(error)
