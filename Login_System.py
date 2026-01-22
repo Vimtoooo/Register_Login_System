@@ -22,9 +22,6 @@ class LoginSystem:
         self.__validate_username(username)
         self.__validate_password(password)
         
-        if username in self.__users:
-            raise UsernameAlreadyExistsError("Username has already been taken")
-        
         encrypted_password: str = self.__encrypt(password)
 
         self.__users.update({username : encrypted_password})
@@ -37,9 +34,6 @@ class LoginSystem:
         self.__validate_username(username)
         self.__validate_password(password)
 
-        if username not in self.__users:
-            raise UsernameNotFoundError("This username either does not exist or is incorrect")
-        
         if username in self.__logged_users:
             raise UserAlreadyLoggedInError("This user is already logged in")
             
@@ -57,9 +51,6 @@ class LoginSystem:
         
         self.__validate_username(username)
 
-        if username not in self.__users:
-            raise UsernameNotFoundError("This username either does not exist or is incorrect")
-        
         if username not in self.__logged_users:
             raise UserAlreadySignedOutError("This user is already signed out")
         
@@ -86,7 +77,8 @@ class LoginSystem:
     def alter_password(self, username: str, current_password: str, new_password: str) -> bool:
         pass
 
-    def __validate_username(self, username: str, new_username: str = "") -> bool:
+
+    def __validate_username(self, username: str, new_username: str = "", altering_username: bool = False) -> bool:
         
         if not isinstance(username, str):
             raise InvalidDataTypeError(f"Incorrect data type for the username argument -> {type(username)}")
@@ -106,6 +98,9 @@ class LoginSystem:
             for c in username:
                 if c not in self.__mapping:
                     raise InvalidUsernameError(f"Invalid usage of characters for the username: {c}")
+                
+            if username in self.__users:
+                raise UsernameAlreadyExistsError("Username has already been taken")
                 
             return True
         
